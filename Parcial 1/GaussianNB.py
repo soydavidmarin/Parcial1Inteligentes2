@@ -7,6 +7,9 @@ from sklearn.metrics import classification_report
 from sklearn.preprocessing import MinMaxScaler, RobustScaler
 from sklearn.feature_selection import SequentialFeatureSelector
 
+import time
+inicio = time.time()
+
 #Subida de datasets
 dataframe=pd.read_csv('bank-full.csv',delimiter=";")
 dataframe.head(7)
@@ -22,14 +25,13 @@ print("Total: ", totalData)
 
 #Conversión de valores categoricos a numericos
 columnas=dataframe.columns.values
+print('numero de columnas ',len(columnas))
 for columnaActual in columnas:  
   if dataframe[columnaActual].dtypes == object or dataframe[columnaActual].dtypes == bool:    
     dataframe[columnaActual]=LabelEncoder().fit_transform(dataframe[columnaActual])        
 
 print(dataframe.head(7))
 
-#print(dataframe['balance'].max())
-#print(dataframe['balance'].min())
 
 '''
 count = 0
@@ -41,14 +43,18 @@ print("Total: ", count)
 '''
 
 #Particion del dataset
+XFull=dataframe.drop(["y"],axis=1)
 X=dataframe.drop(["y"],axis=1)
 y=dataframe["y"]
 XTrain,XTest,yTrain,yTest = None,None,None,None
 
+#
+yPredict = None
+modelo = GaussianNB()
 
-def partition(test_size):    
+def partition(test_size,random_state):    
     global XTrain,XTest,yTrain,yTest
-    XTrain,XTest,yTrain,yTest=train_test_split(X,y,test_size=test_size)
+    XTrain,XTest,yTrain,yTest=train_test_split(X,y,test_size=test_size,random_state=random_state)
 
 def normalitationRobust():    
     global XTrain,XTest
@@ -66,37 +72,81 @@ def normalitationMinMax():
 
 Gaussian Naive Bayes
 """
-yPredictGNB = None
-modeloGNB=    ()
-def trainGNB():    
-    global yPredictGNB
-    modeloGNB.fit(XTrain,yTrain)
-    yPredictGNB=modeloGNB.predict(XTest)   
+
+def train():    
+    global yPredict
+    modelo.fit(XTrain,yTrain)
+    yPredict=modelo.predict(XTest)   
     
 sfs = None    
 selectedFeatures = []
-def sequentialFeatureSelector(features, modelo):
-    global sfs
-    sfs = SequentialFeatureSelector(modelo, n_features_to_select=features)
-    sfs.fit(X, y)                
-    print("Caracteristicas seleccionadas:")
+def sequentialFeatureSelector(featToSel,scoring,cv):
+    global sfs, selectedFeatures,X,modelo
+    X = XFull
+    selectedFeatures.clear()
+    sfs = SequentialFeatureSelector(modelo, n_features_to_select=featToSel, scoring=scoring, cv = cv)
+    sfs.fit(X, y)                    
     features = sfs.get_support();
     for i in range(0, len(features)):
         if features[i]:
             selectedFeatures.append(columnas[i])
-    print(selectedFeatures)
-    
-    
-partition(0.3)
-sequentialFeatureSelector(5,modeloGNB)
-#trainGNB() 
-'''
+    # print("Caracteristicas seleccionadas:")
+    # print(selectedFeatures)
 
-trainGNB()
-matrizGNB=confusion_matrix(yTest,yPredictGNB)
-print('--Matriz de confusión--')
-print(matrizGNB)
-etiquetas=["no","si"]
-print(classification_report(yTest,yPredictGNB,target_names=etiquetas))
-print("Accuracy=",modeloGNB.score(XTest,yTest))
-'''
+    
+def dropFeaturesNoSelected():
+    global X
+    X = XFull
+    colTemp = []
+    for i in columnas:
+        if i not in selectedFeatures:
+            colTemp.append(i)
+    X=dataframe.drop(colTemp,axis=1)    
+    
+def metricas():
+    matriz=confusion_matrix(yTest,yPredict)
+    print('--Matriz de confusión--')
+    print(matriz)
+    etiquetas=["no","si"]
+    print(classification_report(yTest,yPredict,target_names=etiquetas))
+    print("Accuracy=",modelo.score(XTest,yTest))    
+    
+
+test = [0.1,0.2,0.3]
+featuresToSelect = [3,5,len(columnas)-1]                
+randomState = [5,7,9]
+score=["accuracy","recall","f1"]
+cv=[5,7,9]
+maxAcc = 0
+bestConf={
+    "Test": 0,
+    "Features": 0,
+    "RandomState": 0,
+    "score": 0,
+    "cv": 0
+    }
+for t in test:
+    for f in featuresToSelect:     
+        for r in randomState:
+            for s in score:
+                for c in cv:                                     
+                    partition(t, r)
+                    sequentialFeatureSelector(f,s,c)
+                    dropFeaturesNoSelected()
+                    train() 
+                    acc = modelo.score(XTest,yTest)                    
+                    print(t,f,r,s,c)
+                    if acc > maxAcc:
+                        maxAcc = acc
+                        bestConf["Test"]=t
+                        bestConf["Features"]=f
+                        bestConf["RandomState"]=r
+                        bestConf["score"]=s
+                        bestConf["cv"]=c
+print("Best:")
+print(bestConf)
+print(maxAcc*100,"%")        
+
+
+fin = time.time()
+print("time: ",(fin-inicio)/60,'min')
