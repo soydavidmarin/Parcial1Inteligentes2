@@ -113,7 +113,7 @@ def metricas():
     
 
 test = [0.1,0.2,0.3]
-featuresToSelect = [3,5,len(columnas)-1]                
+featuresToSelect = [3,5,len(columnas)-2]                
 randomState = [5,7,9]
 score=["accuracy","recall","f1"]
 cv=[5,7,9]
@@ -135,7 +135,7 @@ for t in test:
                     dropFeaturesNoSelected()
                     train() 
                     acc = modelo.score(XTest,yTest)                    
-                    print(t,f,r,s,c)
+                    print(t,f,r,s,c,acc)
                     if acc > maxAcc:
                         maxAcc = acc
                         bestConf["Test"]=t
