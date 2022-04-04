@@ -1,14 +1,20 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Mon Apr  4 14:07:50 2022
+
+@author: Richa
+"""
+
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix
 from sklearn.preprocessing import LabelEncoder
-from sklearn.naive_bayes import GaussianNB
 from sklearn.metrics import classification_report
 from sklearn.preprocessing import MinMaxScaler, RobustScaler
 from sklearn.feature_selection import SequentialFeatureSelector
 from sklearn.neighbors import KNeighborsClassifier
 import time
-import pickle
+from sklearn import metrics
 inicio = time.time()
 
 # Subida de datasets
@@ -34,15 +40,6 @@ for columnaActual in columnas:
 
 print(dataframe.head(7))
 
-
-'''
-count = 0
-for i in dataframe['balance']:
-    if i < 0:
-        print(i)
-        count+=1
-print("Total: ", count)
-'''
 
 # Particion del dataset
 XFull = dataframe.drop(["y"], axis=1)
@@ -125,46 +122,16 @@ def metricas():
     print("Accuracy=", modelo.score(XTest, yTest))
 
 
-featuresToSelect = [3, 5, len(columnas)-2]
-randomState = [5, 7, 9]
-maxAcc = 0
-bestConf = {
-    "Test": 0,
-    "Features": 0,
-    "RandomState": 0,
-    "score": 0,
-    "cv": 0,
-    "k": 77
-}
 
-for f in featuresToSelect:
-    for r in randomState:
-        partition(0.1, r)
-        normalitationMinMax()
-        sequentialFeatureSelector(f, "accuracy", 5)
-        dropFeaturesNoSelected()
-        train()
-        acc = modelo.score(XTest, yTest)
-        print(0.1, f, r, "accuracy", 5, acc)
-        if acc >= 0.9:
-            print("-----------------------------------")
-            print(0.1, f, r, "accuracy", 5, acc)
-            print("-----------------------------------")
-        if acc > maxAcc:
-            maxAcc = acc
-            bestConf["Test"] = 0.1
-            bestConf["Features"] = f
-            bestConf["RandomState"] = r
-            bestConf["score"] = "accuracy"
-            bestConf["cv"] = 5
-            bestConf["k"] = 77
-            filename = 'knn-model.sav'
-            pickle.dump(modelo, open(filename, 'wb'))
-        print("time: ", (time.time()-inicio)/60, 'min')
-print("Best:")
-print(bestConf)
-print(maxAcc*100, "%")
+partition(0.1, 5)
+normalitationMinMax()
+sequentialFeatureSelector(5, "accuracy", 5)
+dropFeaturesNoSelected()
+train()
+acc = modelo.score(XTest, yTest)
 
-
+print("Accruracy =",metrics.accuracy_score(yTest,yPredict))
+matrizSVC=confusion_matrix(yTest,yPredict)
+metricas()
 fin = time.time()
 print("time: ", (fin-inicio)/60, 'min')

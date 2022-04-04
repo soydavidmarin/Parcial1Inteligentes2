@@ -1,10 +1,16 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Mon Apr  4 15:12:31 2022
+
+@author: Richa
+"""
+
 import pandas as pd 
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix
 from sklearn.preprocessing import LabelEncoder
 from sklearn.naive_bayes import GaussianNB
 from sklearn.metrics import classification_report
-from sklearn.preprocessing import MinMaxScaler, RobustScaler
 from sklearn.feature_selection import SequentialFeatureSelector
 
 import time
@@ -56,18 +62,6 @@ def partition(test_size,random_state):
     global XTrain,XTest,yTrain,yTest
     XTrain,XTest,yTrain,yTest=train_test_split(X,y,test_size=test_size,random_state=random_state)
 
-def normalitationRobust():    
-    global XTrain,XTest
-    escalar=RobustScaler()
-    XTrain=escalar.fit_transform(XTrain)
-    XTest=escalar.transform(XTest)
-    
-def normalitationMinMax():    
-    global XTrain,XTest
-    escalar=MinMaxScaler()
-    XTrain=escalar.fit_transform(XTrain)
-    XTest=escalar.transform(XTest)
-
 """Entrenamiento de modelos
 
 Gaussian Naive Bayes
@@ -109,43 +103,16 @@ def metricas():
     print(matriz)
     etiquetas=["no","si"]
     print(classification_report(yTest,yPredict,target_names=etiquetas))
-    print("Accuracy=",modelo.score(XTest,yTest))    
     
 
-test = [0.1,0.2,0.3]
-featuresToSelect = [3,5,len(columnas)-2]             
-randomState = [5,7,9]
-score=["accuracy","recall","f1"]
-cv=[5,7,9]
-maxAcc = 0
-bestConf={
-    "Test": 0,
-    "Features": 0,
-    "RandomState": 0,
-    "score": 0,
-    "cv": 0
-    }
-for t in test:
-    for f in featuresToSelect:     
-        for r in randomState:
-            for s in score:
-                for c in cv:                                     
-                    partition(t, r)
-                    sequentialFeatureSelector(f,s,c)
-                    dropFeaturesNoSelected()
-                    train() 
-                    acc = modelo.score(XTest,yTest)                    
-                    print(t,f,r,s,c,acc)
-                    if acc > maxAcc:
-                        maxAcc = acc
-                        bestConf["Test"]=t
-                        bestConf["Features"]=f
-                        bestConf["RandomState"]=r
-                        bestConf["score"]=s
-                        bestConf["cv"]=c
-print("Best:")
-print(bestConf)
-print(maxAcc*100,"%")        
+                       
+partition(t, r)
+sequentialFeatureSelector(f, s, c)
+dropFeaturesNoSelected()
+train()
+acc = modelo.score(XTest, yTest)
+metricas()
+      
 
 
 fin = time.time()
